@@ -2,10 +2,13 @@
 
 namespace IDF
 {
-   class Component
+   class Spiffs
    {
    public:
    private:
+      void setup() override;
+      void loop() override;
+      void cleanup() override;
    }; // class Component
 } // namespace IDF
 #define COMPONENT_H
