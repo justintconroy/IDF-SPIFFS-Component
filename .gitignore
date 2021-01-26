@@ -3,8 +3,6 @@ build/
 # Any backup or generated of previous sdkconfig file
 sdkconfig.old
 sdkconfig
-# Visual Studio Code local preferences
-.vscode/
 
 # Prerequisites
 *.d
