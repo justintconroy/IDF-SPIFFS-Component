@@ -1,3 +1,3 @@
 idf_component_register(SRC_DIRS "."
-                       INCLUDE_DIRS "include")
-                       REQUIRES task_base)
+                       INCLUDE_DIRS "include"
+                       REQUIRES spiffs task_base)
