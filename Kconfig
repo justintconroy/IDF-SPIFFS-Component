@@ -1,0 +1,7 @@
+menu "Component"
+    config COMPONENT_OPTION
+        string "An option"
+        default "option!""
+        help
+            Optionally select an option.
+endmenu
