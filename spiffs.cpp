@@ -1,41 +1,68 @@
+#include <sstream>
+#include <stdexcept>
 #include <esp_log.h>
 #include <esp_spiffs.h>
 
 #include "spiffs.h"
 using namespace IDF;
+using namespace std;
 
 static const char *TAG = "Spiffs++";
 
-void Spiffs::setup()
+Spiffs::Spiffs(const string basePath,
+               const string partitionLabel,
+               const int maxFilesOpen,
+               const bool formatIfMountFailed)
+    : _basePath{basePath},
+      _partitionLabel{partitionLabel},
+      _maxFilesOpen{maxFilesOpen},
+      _formatIfMountFailed{formatIfMountFailed}
+{
+  if (_maxFilesOpen <= 0)
+  {
+    ESP_LOGE(TAG, "parameter maxFilesOpen must be greater than zero. got: %d", _maxFilesOpen);
+#ifdef CONFIG_COMPILER_CXX_EXCEPTIONS
+    throw std::invalid_argument("maxFilesOpen");
+#else
+    abort();
+#endif
+  }
+}
+
+void Spiffs::Register()
 {
   ESP_LOGI(TAG, "Initializing SPIFFS");
 
-  esp_vfs_spiffs_conf_t conf = {
-      .base_path = "/spiffs",
-      .partition_label = NULL,
-      .max_files = 5,
-      .format_if_mount_failed = true};
+  esp_vfs_spiffs_conf_t conf;
+  conf.base_path = _basePath.c_str();
+  conf.partition_label = _partitionLabel.empty() ? NULL : _partitionLabel.c_str();
+  conf.max_files = _maxFilesOpen;
+  conf.format_if_mount_failed = _formatIfMountFailed;
 
-  // Use settings defined above to initialize and mount SPIFFS
-  // filesystem. Note: esp_vfs_spiffs_register is an all-in-one
-  // convenience function.
   esp_err_t ret = esp_vfs_spiffs_register(&conf);
 
   if (ret != ESP_OK)
   {
     if (ret == ESP_FAIL)
     {
-      ESP_LOGE(TAG, "Failed to mount or format filesystem.");
+      ESP_LOGE(TAG, "Failed to mount or format filesystem. (%s)", esp_err_to_name(ret));
     }
     else if (ret == ESP_ERR_NOT_FOUND)
     {
-      ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+      ESP_LOGE(TAG, "Failed to find SPIFFS partition (%s)", esp_err_to_name(ret));
     }
     else
     {
       ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
     }
+#ifdef CONFIG_COMPILER_CXX_EXCEPTIONS
+    stringstream s{"Could not initialize SPIFFS: "};
+    s << esp_err_to_name(ret);
+    runtime_error ex(s.str());
+    throw &ex;
+#else
     abort();
+#endif
   }
 
   size_t total = 0, used = 0;
@@ -50,10 +77,7 @@ void Spiffs::setup()
   }
 }
 
-void Spiffs::loop()
+void Spiffs::Unregister()
 {
-}
-
-void Spiffs::cleanup()
-{
+  esp_vfs_spiffs_unregister(_partitionLabel.empty() ? NULL : _partitionLabel.c_str());
 }
